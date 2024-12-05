@@ -1,0 +1,308 @@
+openapi: 3.0.3
+info:
+  title: Movie Match Platform API
+  version: 1.0.0
+servers:
+  - url: https://api.moviematch.com
+tags:
+  - name: authentication
+    description: Методы авторизации и доступа
+  - name: profile
+    description: Методы работы с профилем пользователя
+  - name: movie
+    description: Методы работы с фильмами
+  - name: subscription_payment
+    description: Методы работы с подписками и оплатой
+  - name: match
+    description: Методы работы с мэтчингом и уведомлениями
+paths:
+  /api/v1/auth/login:
+    post:
+      tags:
+        - authentication
+      summary: Авторизация пользователя
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        200:
+          description: Успешная авторизация. Возвращаются токены доступа.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+        400:
+          description: Неверные данные авторизации.
+        401:
+          description: Доступ запрещен, неверный логин или пароль.
+
+  /api/v1/profile/{userId}:
+    get:
+      tags:
+        - profile
+      summary: Получить информацию о профиле пользователя
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Успешное выполнение запроса, возвращается информация о профиле.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: integer
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  preferences:
+                    type: array
+                    items:
+                      type: string
+        400:
+          description: Неверный формат userId.
+        404:
+          description: Пользователь с указанным ID не найден.
+    patch:
+      tags:
+        - profile
+      summary: Обновить информацию о профиле пользователя
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                preferences:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        200:
+          description: Профиль успешно обновлен.
+        400:
+          description: Ошибка валидации данных.
+        404:
+          description: Пользователь с указанным ID не найден.
+
+  /api/v1/movies/session:
+    post:
+      tags:
+        - movie
+      summary: Создать сессию выбора фильмов
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  type: integer
+                preferences:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        201:
+          description: Сессия успешно создана.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+        400:
+          description: Ошибка валидации данных.
+
+  /api/v1/movies/{sessionId}/invite:
+    post:
+      tags:
+        - movie
+      summary: Отправить приглашение в сессию выбора
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+      responses:
+        200:
+          description: Приглашение отправлено.
+        400:
+          description: Ошибка валидации данных.
+        404:
+          description: Сессия с указанным ID не найдена.
+
+  /api/v1/movies/{sessionId}/preferences:
+    put:
+      tags:
+        - movie
+      summary: Настроить предпочтения для сессии
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - preferences
+              properties:
+                preferences:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        200:
+          description: Предпочтения успешно обновлены.
+        400:
+          description: Ошибка валидации данных.
+        404:
+          description: Сессия с указанным ID не найдена.
+
+  /api/v1/movies/{sessionId}/match:
+    get:
+      tags:
+        - match
+      summary: Получить информацию о мэтче для сессии
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Информация о совпадении фильмов для сессии.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matched:
+                    type: boolean
+                  movie:
+                    type: string
+        404:
+          description: Сессия с указанным ID не найдена.
+
+  /api/v1/subscription-payment:
+    post:
+      tags:
+        - subscription_payment
+      summary: Приобрести подписку
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - plan
+              properties:
+                userId:
+                  type: integer
+                plan:
+                  type: string
+                  enum:
+                    - Basic
+                    - Premium
+      responses:
+        201:
+          description: Подписка успешно приобретена.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscriptionId:
+                    type: string
+        400:
+          description: Ошибка валидации данных.
+
+  /api/v1/payment/confirm:
+    patch:
+      tags:
+        - subscription_payment
+      summary: Подтвердить оплату подписки
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - paymentId
+                - status
+              properties:
+                paymentId:
+                  type: string
+                status:
+                  type: string
+                  enum:
+                    - Success
+                    - Failure
+      responses:
+        200:
+          description: Оплата успешно подтверждена.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  confirmationStatus:
+                    type: string
+                    enum:
+                      - Confirmed
+                      - Failed
+        400:
+          description: Неверные данные для подтверждения оплаты.
+        404:
+          description: Платеж с указанным ID не найден.

@@ -1,0 +1,110 @@
+@startuml
+
+actor "Основной пользователь" as MainUser order 1
+actor "Приглашенный участник" as GuestUser order 2
+participant "Мобильное приложение" as MobileApp order 3
+participant "Сервер" as Server order 4
+participant "Платежная система" as PaymentSystem order 5
+
+autonumber
+
+==Регистрация и приглашение участников==
+MainUser -> MobileApp++ : Регистрация
+MobileApp -> Server++ : Ортправка данных для регистрации
+MobileApp <-- Server-- : Данные сохранены
+MobileApp --> MainUser : Регистрация завершена
+
+MainUser -> MobileApp : Создание сессии выбора
+MainUser -> GuestUser : Приглашение в сессию выбора
+GuestUser -> MobileApp : Принять приглашение
+MobileApp -> Server++ : Присоединение к сессии
+MobileApp <-- Server-- : Сессия подтверждена
+MobileApp --> GuestUser : Сессия подтверждена
+deactivate MobileApp
+deactivate Server
+
+==Настройка предпочтений==
+MainUser -> MobileApp++ : Настройка и выбор предпочтений
+MobileApp -> Server++ : Запрос рекомендаций
+Server -> MobileApp : Возвращает список фильмов
+MobileApp --> MainUser : Список фильмов
+
+GuestUser -> MobileApp : Настройка предпочтений
+MobileApp -> Server : Запрос рекомендаций для гостя
+MobileApp <- Server-- : Возвращает список фильмов для гостя
+MobileApp --> GuestUser : Список фильмов
+deactivate MobileApp
+deactivate Server
+
+==Процесс выбора фильмов==
+
+MainUser -> MobileApp++ : Процесс свайпинга фильмов
+GuestUser -> MobileApp : Процесс свайпинга фильмов
+
+deactivate MobileApp
+
+alt Мэтч не найден
+MainUser -> MobileApp++ : Дизлайк фильма
+GuestUser -> MobileApp : Дизлайк того же фильма
+MobileApp -> MainUser : Предложение сменить подборку
+GuestUser <- MobileApp-- : Предложение сменить подборку
+
+deactivate Server
+
+else Мэтч найден
+MainUser -> MobileApp++ : Лайк фильма
+GuestUser -> MobileApp : Лайк того же фильма
+MobileApp -> Server++ : Отправка данных о совпадении
+MobileApp <-- Server-- : Совпадание подтверждено
+MobileApp --> MainUser : Мэтч найден
+MobileApp --> GuestUser : Мэтч найден
+
+deactivate MobileApp
+end
+
+==Приобретение подписки для расширенной библиотеки контента==
+    MainUser -> MobileApp++ : Запрос приобретения подписки
+    MobileApp -> PaymentSystem++ : Инициализация платежа
+    PaymentSystem -> MobileApp : Запрос данных оплаты
+    MobileApp -> MainUser : Окно для ввода данных оплаты
+    MainUser -> MobileApp : Ввод данных оплаты
+    MobileApp -> PaymentSystem : Отправка данных оплаты
+
+deactivate MobileApp
+
+alt Платеж не прошел
+    PaymentSystem --> MobileApp++ : Ошибка оплаты
+    MobileApp -> MainUser : Уведомление об ошибке при оплате
+    MainUser -> MobileApp : Повторная попытка оплаты
+    MobileApp -> PaymentSystem : Повторная инициализация платежа
+    PaymentSystem -> MobileApp : Запрос данных оплаты
+    MobileApp -> MainUser : Окно для ввода данных оплаты
+    MainUser -> MobileApp : Ввод данных оплаты
+    MobileApp -> PaymentSystem : Отправка данных оплаты
+
+deactivate MobileApp
+
+else Платеж прошел успешно
+    PaymentSystem --> MobileApp++ : Подтверждение оплаты
+    deactivate PaymentSystem
+    MobileApp -> Server++ : Отправка данных об оплате
+    Server --> Server : Подтверждение оплаты
+    MobileApp -> MainUser : Уведомление об успешной оплате
+
+    deactivate MobileApp
+    deactivate Server
+end
+
+==Совместный просмотр фильма==
+opt Совместный просмотр фильма
+    MainUser -> MobileApp++ : Начать совместный просмотр
+    MobileApp -> Server++ : Инициализация совместного просмотра
+    GuestUser -> MobileApp-- : Присоединиться к просмотру
+    deactivate MobileApp
+    Server -> MainUser : Воспроизведение началось
+    Server -> GuestUser : Воспроизведение началось
+  
+    deactivate Server
+end opt
+
+@enduml

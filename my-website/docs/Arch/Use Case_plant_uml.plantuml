@@ -1,0 +1,50 @@
+@startuml
+actor "Пользователь" as P
+actor "Мобильное приложение" as M
+actor "Платежная система" as PAY
+
+
+package "Платформа онлайн-кинотеатра" {
+
+usecase "Войти в систему" as UC1
+usecase "Создать сессию выбора" as UC2
+usecase "Отправить приглашение в сессию выбора" as UC3
+usecase "Настроить предпочтения" as UC4
+usecase "Выбрать фильм" as UC5
+usecase "Приобрести подписку" as UC10
+usecase "Ввести данные об оплате" as UC14
+usecase "Запустить совместный просмотр" as UC17
+
+usecase "Уведомить о совпадении" as UC6
+usecase "Авторизовать пользователя" as UC7
+usecase "Отправить данные о предпочтениях" as UC8
+usecase "Запросить рекомендации" as UC9
+usecase "Проверить наличие подписки" as UC11
+usecase "Вычислить тариф подписки" as UC12
+usecase "Инициализировать платеж" as UC13
+usecase "Подтвердить оплату" as UC15
+usecase "Уведомить об успешной оплате" as UC16
+
+}
+
+P -left-> UC1
+P -up-> UC2
+UC3 .> UC2 : include
+UC2 --> UC4
+UC4 --> UC5
+UC5 .left.> UC17 : extend
+UC5 .down.> UC10 : extend
+UC10 .left.> UC14 : include
+
+M --> UC7
+M --> UC8
+UC8 --> UC9
+UC9 --> UC6
+M --> UC11
+UC11 --> UC12
+
+PAY --> UC13
+PAY --> UC15
+PAY --> UC16
+
+@enduml
